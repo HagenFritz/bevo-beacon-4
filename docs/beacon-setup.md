@@ -127,43 +127,64 @@ sudo apt install -y git vim nano tree htop
 sudo apt install -y python3-numpy python3-scipy python3-matplotlib python3-pandas
 ```
 
-## Step 6: Verify Hardware Interfaces
+## Step 7: GPIO Testing and Code Repository Setup
 
-### Test I2C Interface
+### Clone the BEVO Beacon V4 Repository
+
 ```bash
-# Should show empty grid (no devices connected yet)
-sudo i2cdetect -y 1
+cd ~
+git clone https://github.com/HagenFritz/bevo-beacon-4.git
+cd bevo-beacon-4/src
+
+# Activate virtual environment if not already active
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install any additional dependencies
+pip install -r requirements.txt  # if requirements file exists
 ```
 
-### Test GPIO Access
-Create a simple GPIO test:
-```bash
-nano gpio_test.py
+### Breadboard LED Test Circuit
+
+#### Components Required
+- 1 LED (any color)
+- 1x 1K ohm resistor (use this instead of 10K for visible brightness)
+- 2 jumper wires (male-to-male)
+- Breadboard
+
+#### Circuit Wiring
+```
+Raspberry Pi GPIO 18 ──[1K resistor]──[LED+]──[LED-]── Raspberry Pi GND
 ```
 
-Add this code:
-```python
-#!/usr/bin/env python3
-import RPi.GPIO as GPIO
-import time
+**Physical Pin Connections:**
+- **GPIO 18** (physical pin 12) → 1K resistor → LED long leg (positive/anode)
+- **LED short leg** (negative/cathode) → **Ground** (physical pin 6)
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(18, GPIO.OUT)
+#### Breadboard Layout
+1. Insert LED into breadboard with legs in separate rows
+2. Connect 1K resistor from LED positive leg to a nearby breadboard row
+3. Connect jumper wire from GPIO 18 (pin 12) to the resistor row
+4. Connect jumper wire from LED negative leg to Pi Ground (pin 6)
 
-# Simple blink test
-for i in range(5):
-    GPIO.output(18, True)
-    time.sleep(0.5)
-    GPIO.output(18, False)
-    time.sleep(0.5)
-    
-GPIO.cleanup()
-print("GPIO test completed successfully!")
+```
+    Pi Header                 Breadboard
+┌─────────────────┐         ┌────────────────┐
+│  1●  ●2         │         │ [1K-R]──[LED+] │
+│  3●  ●4         │         │         │      │
+│  5●  ●6  GND────┼─────────┼─────────┘      │
+│  7●  ●8         │         │  [LED-]────────│
+│  9●  ●10        │         └────────────────┘
+│ 11●  ●12 GPIO18─┼─────────────[to resistor]
+│ 13●  ●14        │
+└─────────────────┘
 ```
 
-Run the test:
+### Run GPIO Test Code
+
 ```bash
-python3 gpio_test.py
+# Run the GPIO test script (replace with actual filename)
+python3 src/scripts/test_gpio.py
 ```
 
 ## Troubleshooting
@@ -191,16 +212,3 @@ With this foundation complete, you're ready to proceed with:
 2. **Power System Validation** with all components
 3. **Sensor Integration** starting with SHT41 (temperature/humidity)
 4. **Software Development** for unified data collection
-
-## Key Learnings
-
-- **NetworkManager vs wpa_supplicant**: Modern Pi OS uses NetworkManager; ignore outdated wpa_supplicant tutorials
-- **SSH on institutional networks**: Often blocked; phone hotspot provides reliable alternative
-- **Micro vs Mini HDMI**: Pi 4B uses micro HDMI (smallest size), not mini HDMI
-- **Pi OS Lite**: No GUI, all configuration via command line
-
-## Estimated Setup Time
-- Initial setup and flashing: 30 minutes
-- Network configuration and troubleshooting: 15-45 minutes (depending on network complexity)
-- Development environment installation: 20 minutes
-- Total: 1-2 hours for complete foundation setup
