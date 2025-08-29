@@ -34,11 +34,6 @@ class FanCycleTester:
         print("Fan 100% (startup)")
         self.set_speed_immediate(100)
         time.sleep(5)
-        
-        # Drop to 10%
-        print("Fan 10% (drop from startup)")
-        self.set_speed_immediate(10)
-        time.sleep(5)
     
     def speed_sweep(self, start_speed=10, end_speed=90, step=10):
         """Test speeds from start to end in steps"""
@@ -48,81 +43,9 @@ class FanCycleTester:
         
         for speed in speeds:
             print(f"Testing {speed}%")
+            self.startup_cycle()
             self.set_speed_immediate(speed)
             time.sleep(5)
-    
-    def full_test_cycle(self):
-        """Execute complete test: startup cycle + speed sweep"""
-        try:
-            # Startup cycle first
-            self.startup_cycle()
-            
-            # Continue with speed sweep from 10% to 90%
-            self.speed_sweep(start_speed=10, end_speed=90, step=10)
-            
-            # Final shutdown
-            print("\n=== Shutdown ===")
-            print("Fan OFF")
-            self.set_speed_immediate(0)
-            time.sleep(2)
-            
-            print("✅ Test cycle complete")
-            
-        except KeyboardInterrupt:
-            print("\nTest interrupted by user")
-        
-        finally:
-            self.cleanup()
-    
-    def interactive_mode(self):
-        """Interactive speed control"""
-        print(f"\nInteractive Mode (PWM @ {self.frequency}Hz)")
-        print("Commands:")
-        print("  0-100: Set speed percentage")
-        print("  'startup': Run startup cycle")
-        print("  'sweep': Run 10-90% sweep")
-        print("  'q': Quit")
-        
-        try:
-            while True:
-                user_input = input("\nCommand: ").strip().lower()
-                
-                if user_input == 'q':
-                    break
-                elif user_input == 'startup':
-                    self.startup_cycle()
-                elif user_input == 'sweep':
-                    self.speed_sweep()
-                elif user_input.isdigit():
-                    speed = int(user_input)
-                    if 0 <= speed <= 100:
-                        if speed > 0 and not self.is_running:
-                            print("Fan not running - executing startup sequence first")
-                            self.startup_cycle()
-                            if speed != 10:  # If target isn't 10%, set it after startup
-                                time.sleep(1)
-                                self.set_speed_immediate(speed)
-                        else:
-                            self.set_speed_immediate(speed)
-                            if speed == 0:
-                                self.is_running = False
-                    else:
-                        print("Speed must be 0-100")
-                else:
-                    print("Invalid command")
-        
-        except KeyboardInterrupt:
-            print("\nExiting interactive mode")
-        
-        finally:
-            self.cleanup()
-    
-    def cleanup(self):
-        """Clean shutdown"""
-        self.pwm.ChangeDutyCycle(0)
-        self.pwm.stop()
-        GPIO.cleanup()
-        print("GPIO cleanup complete")
 
 def main():
     """Main function with command line argument parsing"""
@@ -130,8 +53,6 @@ def main():
     parser = argparse.ArgumentParser(description="BEVO Beacon V4 Fan Cycle Tester")
     parser.add_argument("--hz", type=int, default=500, 
                        help="PWM frequency in Hz (default: 500)")
-    parser.add_argument("--interactive", "-i", action="store_true",
-                       help="Run in interactive mode")
     parser.add_argument("--gpio", type=int, default=18,
                        help="GPIO pin number (default: 18)")
     
@@ -144,10 +65,7 @@ def main():
     
     fan_controller = FanCycleTester(gpio_pin=args.gpio, frequency=args.hz)
     
-    if args.interactive:
-        fan_controller.interactive_mode()
-    else:
-        fan_controller.full_test_cycle()
+    fan_controller.speed_sweep()
 
 if __name__ == "__main__":
     main()
